@@ -1,0 +1,299 @@
+---
+title: "Modeling: Diabetes Health Indicators"
+author: "Lanette Tyler"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Introduction
+
+### Data: Diabetes Binary Health Indicators
+
+The data used in this analysis is from the Diabetes Health Indicators Dataset available at kaggle. The specific data file used is diabetes_binary_health_indicators_BRFSS2015.csv. This file consists of a cleaned data set of 253,680 survey responses to the CDC's Behavioral Risk Factor Surveillance System (RFSS) 2015. This analysis is focused on the lifestyle factors of smoking, drinking, physical activity, eating fruits and vegetables, as well as the basic body features of BMI, sex, and age, with the goal of building a model of these variables to predict diabetes status. A more detailed description of the variables is given in the [EDA portion](EDA.html) of the project.
+
+[Learn more about the original data here.](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset/data?select=diabetes_binary_health_indicators_BRFSS2015.csv)
+
+### Purpose
+
+The purpose of this modeling exercise is to fit both classification tree and random forest models to the variables under consideration in order to predict diabetes status. A best fit model of each type will be selected, and then an overall best fit. The modeling data is split into training and test sets, five-fold cross-validation is used to to fit each model type, and log-loss is used as the metric for selecting models.
+
+The ultimate goal of the entire project is to fit predictive models to the variables, choose a best fit model of each type and then an overall best fit, and then house that model in an API within a docker container.
+
+## Preliminary Tasks
+
+*Load packages and create smaller data file for modeling.*
+
+Load packages:
+
+```{r}
+library(tidyverse)
+library(labelled)
+library(tidymodels)
+library(rpart)
+library(baguette)
+```
+
+Create modeling data file:
+
+```{r}
+m_data <- d_data |> select(dia_ind, bmi, smoker, phys_act, fruits, veggies, alcohol, sex, age)
+```
+
+## Split Data
+
+*Split data into training and test sets, create folds for cross-validation (CV).*
+
+Split data into training and test sets:
+
+```{r}
+set.seed(50)
+m_split <- initial_split(m_data, prop = 0.7, strata = dia_ind)
+m_train <- training(m_split)
+m_test <- testing(m_split)
+m_train #take a look
+m_test #take a look
+```
+
+Create CV folds on training data:
+
+```{r}
+m_CV_folds <- vfold_cv(m_train, 5)
+```
+
+## Classification Tree Model
+
+A **classification tree** is a type of **decision tree**. It is a flexible, nonlinear model in which the predictor space is divided into regions, and a prediction value is assigned to each region. The most common classification for a region is usually assigned to that region. The modeling algorithm determines the best variable to start with (the most influential) and where to split the variables. The values of the variables determine the value of the prediction, according to the fitted decision tree.
+
+Using the tidymodels framework, we will create a recipe, a model engine, and a workflow; fit the workflow to the CV folds; collect metrics and determine best classification tree model (best tuning parameter(s)), finalize the workflow and fit that best model to the entire training data set.
+
+Create recipe:
+
+```{r}
+cl_tree_recipe <- recipe(dia_ind ~ ., data = m_train) |>
+  step_normalize(bmi) |>
+  step_dummy(smoker, phys_act, fruits, veggies, alcohol, sex, age)
+```
+
+Create model engine:
+
+```{r}
+cl_tree_model <- decision_tree(tree_depth = 7,
+                          min_n = 20,
+                          cost_complexity = tune()) |>
+  set_engine("rpart") |>
+  set_mode("classification")
+```
+
+Create workflow:
+
+```{r}
+cl_tree_wkflow <- workflow() |>
+  add_recipe(cl_tree_recipe) |>
+  add_model(cl_tree_model)
+```
+
+Create fits:
+
+```{r}
+#first create grid
+cl_tree_grid <- grid_regular(cost_complexity(),
+                          levels = 15)
+
+#then create fits with grid
+cl_tree_fits <- cl_tree_wkflow |> 
+  tune_grid(resamples = m_CV_folds,
+            grid = cl_tree_grid,
+            metrics = metric_set(mn_log_loss))
+```
+
+Collect metrics:
+
+```{r}
+cl_tree_fits |>
+  collect_metrics() |>
+  arrange(mean)
+```
+
+Choose the best fit classification tree model/best cost_complexity parameter:
+
+```{r}
+cl_tree_best_parameters <- select_best(cl_tree_fits, metric = "mn_log_loss")
+cl_tree_best_parameters #take a look
+```
+
+Finalize workflow and fit model to the entire training set:
+
+```{r}
+cl_tree_best_fit <- cl_tree_wkflow |>
+  finalize_workflow(cl_tree_best_parameters) |>
+  last_fit(m_split, metrics = metric_set(mn_log_loss))
+cl_tree_best_fit #take a look
+```
+
+We now have the fit, plus the metrics for how this fit performs on the test set.
+
+```{r}
+cl_tree_best_fit |>
+  collect_metrics()
+```
+
+View plot of the model:
+
+```{r}
+cl_tree_best_fit |>
+  extract_fit_engine() |>
+  rpart.plot::rpart.plot(roundint = FALSE)
+```
+
+The classification tree splits first on BMI.
+
+## Random Forest Model
+
+The regression tree model just fit to the diabetes data was an individual tree model. When prediction is the only goal, ensemble tree models can be used. **Ensemble tree models** are built from an average of many trees. To build many trees, bootstrapping is used to create many data samples. Each sample is then used to build an individual tree model, and the ensemble model is an average of the many individual models. This method decreases variance over individual tree fits.
+
+Non-parametric bootstrapping involves treating the original data sample as the population. Additional samples are created by drawing from the "population" with replacement. Building ensemble tree models using bootstrap aggregation is called **bagging**. The prediction is the most common classification for that region of predictor space across all of the fitted trees.
+
+**Random forest models** are based on the same ideas as bagging, except that a random, set number of predictors is used at each step instead of using all of the predictors for each split. This improves the model over bagging in situations where a very strong predictor exists, causing more correlation between trees resulting in a smaller reduction in variance from aggregation. Random forest models protect against domination of the model by one or two good predictors.
+
+Similar to the classification tree model, a random forest model will be generated for the diabetes data set using the tidymodels framework by defining a recipe, a model specification, and a workflow; fitting the workflow to the CV folds, collecting metrics and determining the best random forest model (best tuning parameter(s)), and fitting that best model to the entire training data set.
+
+Create recipe:
+*This is the same recipe used for the classification tree model.*
+
+```{r}
+random_forest_recipe <- recipe(dia_ind ~ ., data = m_train) |>
+#  update_role(age, new_role = "ID") |>
+  step_normalize(bmi) |>
+  step_dummy(smoker, phys_act, fruits, veggies, alcohol, sex, age)
+```
+
+Create model engine:
+*This is different than for the classification tree model.*
+
+```{r}
+random_forest_model <- rand_forest(mtry = tune(), trees = 100) |>
+  set_engine("ranger", importance = "impurity") |>
+  set_mode("classification")
+```
+
+The model is tuning for the number of predictors to be randomly sampled at each split (mtry).
+
+Create workflow:
+
+```{r}
+random_forest_wkflow <- workflow() |>
+  add_recipe(random_forest_recipe) |>
+  add_model(random_forest_model)
+```
+
+Fit workflow to CV folds:
+
+```{r}
+random_forest_fits <- random_forest_wkflow |>
+  tune_grid(resamples = m_CV_folds, 
+            grid = 7,
+            metrics = metric_set(mn_log_loss))
+```
+
+Collect metrics:
+
+```{r}
+random_forest_fits |>
+  collect_metrics() |>
+  arrange(mean)
+```
+
+Determine best random forest model fit/best mtry parameter:
+
+```{r}
+random_forest_best_parameters <- select_best(random_forest_fits,
+                                             metric = "mn_log_loss")
+random_forest_best_parameters #take a look
+```
+
+Finalize workflow and fit model to the entire training set:
+
+```{r}
+random_forest_best_fit <- random_forest_wkflow |>
+  finalize_workflow(random_forest_best_parameters) |>
+  last_fit(m_split, metrics = metric_set(mn_log_loss))
+random_forest_best_fit #take a look
+```
+
+We now have the fit, plus the metrics for how this fit performs on the test set.
+
+```{r}
+random_forest_best_fit |>
+  collect_metrics()
+```
+
+Visualize the random forest best fit with a variable importance plot:
+
+```{r}
+#function for extracting importance values
+get_rf_imp <- function(random_forest_object) {
+    extract_fit_parsnip(random_forest_object) |>
+    vip::vi()
+}
+
+# use the function on the best random forest fit
+rf_importance <- get_rf_imp(random_forest_best_fit)
+
+#plot the importance values
+ggplot(rf_importance, aes(x = Importance, y = Variable)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Random Forest Best Fit:", 
+       subtitle = "Variable Importance Plot")
+```
+
+According to the plot, the most important variable considered is BMI, by far. This parallels the classification tree's first split on BMI. The next most important variable in the random forest according to the plot is physical activity.
+
+## Final Model Selection
+
+Compare the performance of both best fit models on the test data:
+
+```{r}
+rbind(
+cl_tree_best_fit |>
+  collect_metrics() |>
+  mutate("Model" = "Best Classification Tree") |>
+  select(Model, everything()),
+random_forest_best_fit |>
+  collect_metrics() |>
+  mutate("Model" = "Best Random Forest") |>
+  select(Model, everything())
+)
+```
+
+The random forest model has mean log-loss of 0.353 while the classification tree has mean log-loss of 0.384. The best-fit random forest model is the final model selection.
+
+## Final Model
+
+Fit the overall best model (the best random forest model) to the entire data set.
+
+```{r}
+final_model <- random_forest_wkflow |>
+  finalize_workflow(random_forest_best_parameters) |>
+  fit(m_data)
+```
+
+View the final model as a variable importance plot:
+
+```{r}
+var_importance <- get_rf_imp(final_model) #function to extract importance values
+
+#plot the importance values
+ggplot(var_importance, aes(x = Importance, y = Variable)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Variable Importance Plot: Final Model", 
+       subtitle = "Best Random Forest Model Fit on Entire Data Set")
+```
+
+Export data set for the diabetes model for use in associated API:
+
+```{r}
+write_csv(m_data, "modelAPI.R/diabetes_modeling_data.csv")
+```
+

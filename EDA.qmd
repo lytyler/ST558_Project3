@@ -1,0 +1,416 @@
+---
+title: "Exploratory Data Analysis: Diabetes Health Indicators"
+author: "Lanette Tyler"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Introduction
+
+### Data: Diabetes Binary Health Indicators
+
+The data used in this analysis is from the Diabetes Health Indicators Dataset available at kaggle. The specific data file used is diabetes_binary_health_indicators_BRFSS2015.csv. This file consists of a cleaned data set of 253,680 survey responses to the CDC's Behavioral Risk Factor Surveillance System (RFSS) 2015. This analysis is focused on the lifestyle factors of smoking, drinking, physical activity, eating fruits and vegetables, as well as the basic body features of BMI, sex, and age, with the ultimate goal of building a model of these variables to predict diabetes status. These variables are described below:
+
+**Target Variable**
+
+-   Diabetes_binary (renamed dia_ind; labelled Diabetes Status): two classes indicating no diabetes or pre-diabetes/diabetes
+
+**Predictor Variables Considered**
+
+-   BMI (renamed bmi; labelled BMI): Body Mass Index (continuous variable)
+
+-   Smoker (renamed smoker; labelled Smoker): two classes indicating whether the subject had smoked at least 100 cigarettes (5 packs) in their lifetime
+
+-   PhysActivity (renamed phys_act; labelled Physical Activity within Last Month): two classes indicating if subject had engaged in physical activity outside of work in the previous 30 days or not
+
+-   Fruits (renamed fruits; labelled Daily Fruit): two classes indicating if subject had consumed fruit one or more times per day or not
+
+-   Veggies (renamed fruits; labelled Daily Veggie): two classes indicating if subject had consumed veggies one or more times per day or not
+
+-   HvyAlcoholConsump (renamed alcohol; labelled Heavy Alcohol Consumption): two classes indicating if men had consumed more than 14 drinks per week and women more than 7 or not
+
+-   Sex (renamed sex; labelled Sex): two classes indicating male or female
+
+-   Age (renamed age; labelled Age): thirteen classes indicating age range (Ages 18 to 24, Ages 25 to 29, Ages 30 to 34, Ages 35 to 39, Ages 40 to 44, Ages 45 to 49, Ages 50 to 54, Ages 55 to 59, Ages 60 to 64, Ages 65 to 69, Ages 70 to 74, Ages 75 to 79, Ages 80 or older)
+
+[Learn more about the original data here.](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset/data?select=diabetes_binary_health_indicators_BRFSS2015.csv)
+
+### Purpose
+
+The purpose of this exploratory data analysis is to see data summaries and visualizations of the variables under consideration to begin to understand the relationship between these predictors and the target variable of diabetes status. The ultimate goal of the entire project is to fit predictive models to the variables, choose a best fit model, and then house that model in an API within a docker container.
+
+## Preliminary Tasks
+
+*Load packages, read in data, and change variable names.*
+
+Load packages:
+
+```{r}
+library(tidyverse)
+library(labelled)
+```
+
+Read in data:
+
+```{r}
+original_diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
+head(original_diabetes_data) #take a look
+```
+
+Change variable names to make them easier to work with:
+
+```{r}
+d_data <- original_diabetes_data |>
+  rename("dia_ind" = "Diabetes_binary",
+         "bp" = "HighBP",
+         "chol" = "HighChol",
+         "chol_ch5" = "CholCheck",
+         "bmi" = "BMI",
+         "smoker" = "Smoker",
+         "stroke" = "Stroke",
+         "hrt_dis_atk" = "HeartDiseaseorAttack",
+         "phys_act" = "PhysActivity",
+         "fruits" = "Fruits",
+         "veggies" = "Veggies",
+         "alcohol" = "HvyAlcoholConsump",
+         "h_care" = "AnyHealthcare",
+         "no_doc" = "NoDocbcCost",
+         "gen_health" = "GenHlth", 
+         "m_health" ="MentHlth", 
+         "ph_health" = "PhysHlth",
+         "walk_diff" = "DiffWalk", 
+         "sex" = "Sex", 
+         "age" ="Age", 
+         "edu"  ="Education", 
+         "income" = "Income")
+head(d_data) #take a look
+```
+
+## Data Validation
+
+*Check for missing values, check data types/formats, and check for reasonable values.*
+
+Check for missing values in data set:
+
+```{r}
+sum(is.na(d_data))
+```
+
+There do not seem to be any missing values in the data set. This is consistent with its description as a clean data set.
+
+Look at data types/formats:
+
+```{r}
+head(d_data)
+```
+
+All columns in the data set are numeric, but most should be categorical.
+
+Change data columns to factor type as appropriate:
+
+```{r}
+d_data <- d_data |> mutate(
+  dia_ind = factor(dia_ind, levels = c(0, 1), 
+                   labels = c("No Diabetes", "Diabetes")), 
+  bp = factor(bp, levels = c(0, 1), 
+              labels = c("No High BP", "High BP")), 
+  chol = factor(chol, levels = c(0, 1), 
+                labels = c("No High Cholesterol", "High Cholesterol")), 
+  chol_ch5 = factor(chol_ch5, levels = c(0, 1),
+                    labels = c("No 5yr Cholesterol Check", "5yr Cholesterol Check")),
+  smoker = factor(smoker, levels = c(0, 1),
+                  labels = c("Non-Smoker", "Smoker")),
+  stroke = factor(stroke, levels = c(0, 1),
+                  labels = c("No Stroke", "Stroke")),      
+  hrt_dis_atk = factor(hrt_dis_atk, levels = c(0, 1),
+                  labels = c("No Heart Disease/Attack", "Heart Disease/Attack")),
+  phys_act = factor(phys_act, levels = c(0, 1),
+                  labels = c("No Physical Activity", "Physical Activity")), 
+  fruits = factor(fruits, levels = c(0, 1),
+                  labels = c("No Fruit", "Fruit")), 
+  veggies = factor(veggies, levels = c(0, 1),
+                  labels = c("No Veggies", "Veggies")),     
+  alcohol = factor(alcohol, levels = c(0, 1),
+                  labels = c("Not Heavy Drinker", "Heavy Drinker")),    
+  h_care = factor(h_care, levels = c(0, 1),
+                  labels = c("No Healthcare Coverage", "Healthcare Coverage")),      
+  no_doc = factor(no_doc, levels = c(0, 1),
+                  labels = c("No Missed Visit Due to Money", "Missed Visit Due to Money")),      
+  gen_health = factor(gen_health, levels = c(1, 2, 3, 4, 5),
+                      labels = c("Excellent General", "Very Good General Health", 
+                                 "Good General Health", "Fair General Health", "Poor General Health")),
+  m_health = factor(m_health, levels = c(0:30),
+                      labels = c(0:30)),
+  ph_health = factor(ph_health, levels = c(0:30),
+                      labels = c(0:30)),
+  walk_diff = factor(walk_diff, levels = c(0, 1),
+                      labels = c("No Difficulty Walking", "Difficulty Walking")),
+  sex = factor(sex, levels = c(0, 1),
+                  labels = c("Female", "Male")),
+  age = factor(age, levels = c(1:13),
+               labels = c("Ages 18 to 24", 
+                          "Ages 25 to 29", 
+                          "Ages 30 to 34", 
+                          "Ages 35 to 39",
+                          "Ages 40 to 44", 
+                          "Ages 45 to 49", 
+                          "Ages 50 to 54", 
+                          "Ages 55 to 59",
+                          "Ages 60 to 64",
+                          "Ages 65 to 69",
+                          "Ages 70 to 74",
+                          "Ages 75 to 79",
+                          "Ages 80 or older")),         
+  edu = factor(edu, levels = c(1:6),
+               labels = c("Kindergarten or Less", "Grades 1 to 8", "Some High School", "High School Graduate", "Some College or Technical School", "College Graduate")),
+  income = factor(income, levels = c(1:8),
+                  labels = c("Less than $10,000",
+                             "$10,000 to less than $15,000",
+                             "$15,000 to less than $20,000",
+                             "$20,000 to less than $25,000",
+                             "$25,000 to less than $35,000", 
+                             "$35,000 to less than $50,000",
+                             "$50,000 to less than $75,000",
+                             "$75,000 or more")))
+head(d_data) #take a look
+```
+
+All data columns are changed to factor type except for BMI which is left as numeric.
+
+Look at data summary to check for reasonable values:
+
+```{r}
+summary(d_data)
+```
+
+Everything looks reasonable.
+
+Add labels for when nicer names are desired:
+
+```{r}
+var_label(d_data) <- c("Diabetes Status", 
+                       "Blood Pressure",
+                       "Cholesterol",
+                       "Cholesterol Check within 5 Years", 
+                       "BMI",
+                       "Smoking Status", 
+                       "Stroke Status", 
+                       "Heart Disease or Attack History", 
+                       "Physical Activity within Last Month", 
+                       "Daily Fruit", 
+                       "Daily Veggie", 
+                       "Heavy Alcohol Consumption", 
+                       "Healthcare Coverage Status", 
+                       "Skipped Needed Doctor Visit Due to Cost in Last Year", 
+                       "Self-Perception of General Health", 
+                       "Self-Perception of Mental Health", 
+                       "Self-Perception of Physical Health", 
+                       "Serious Difficulty Walking or Climbing Stairs", 
+                       "Sex", 
+                       "Age", 
+                       "Education", 
+                       "Income")   
+var_label(d_data) #take a look at the labels
+```
+
+## Exploratory Data Analysis (EDA)
+
+*This exploratory data analysis focuses on variables related to lifestyle and health history.*
+
+### Numeric Summaries
+
+One-Way Contingency Tables of Categorical Variables of Interest, as Proportions:
+
+```{r}
+proportions(table(d_data$dia_ind))
+proportions(table(d_data$smoker))
+proportions(table(d_data$phys_act))
+proportions(table(d_data$fruits))
+proportions(table(d_data$veggies))
+proportions(table(d_data$alcohol))
+proportions(table(d_data$sex))
+proportions(table(d_data$age))
+```
+
+Most respondents did not have diabetes (86%). A surprisingly high percentage smoked (44%). Most ate veggies (81%) and fruit (63%) at least once a day. Very few were heavy drinkers (6%). A bit over a half were female (56%).
+
+Two-Way Contingency Tables of Categorical Variables of Interest, as Proportions, Grouped by Diabetes Status:
+
+```{r}
+proportions(table(d_data$dia_ind, d_data$smoker))
+proportions(table(d_data$dia_ind, d_data$phys_act))
+proportions(table(d_data$dia_ind, d_data$fruits))
+proportions(table(d_data$dia_ind, d_data$veggies))
+proportions(table(d_data$dia_ind, d_data$alcohol))
+proportions(table(d_data$dia_ind, d_data$sex))
+proportions(table(d_data$dia_ind, d_data$age))
+```
+
+Slightly higher proportions of smokers compared to non-smokers, non-physically active compared to physically active, non-fruit eaters compared to fruit eaters, non-veggie eaters compared to veggie eaters, and males compared to females had diabetes. These were not big differences. Proportion of diabetes was higher at higher ages. Counterintuitively, the heavy drinkers had a slightly lower proportion of diabetes than non-heavy drinkers.
+
+Numeric Data Summary of Numeric Variable (BMI):
+
+```{r}
+d_data |> summarize("mean_BMI" = mean(bmi), 
+          "median_BMI" = median(bmi),
+          "sd_BMI" = sd(bmi))
+```
+
+Numeric Data Summary of BMI Grouped by Diabetes Status:
+
+```{r}
+d_data |> 
+  group_by(dia_ind) |>
+  summarize("mean_BMI" = mean(bmi), 
+          "median_BMI" = median(bmi),
+          "sd_BMI" = sd(bmi))
+```
+
+The mean and median BMI were both about four points higher for those with diabetes, but this was within the standard deviation.
+
+### Graphical Data Summaries
+
+Bar Plots of Single Numeric Variables:
+
+```{r}
+ggplot(data = d_data, aes(x = dia_ind, fill = dia_ind)) +
+  geom_bar() +
+  labs(y = "Count", title = paste("Bar Plot: ", var_label(d_data$dia_ind)))
+
+ggplot(data = d_data, aes(x = smoker, fill = smoker)) +
+  geom_bar() +
+  labs(y = "Count", title = paste("Bar Plot: ", var_label(d_data$smoker)))
+
+ggplot(data = d_data, aes(x = phys_act, fill = phys_act)) +
+  geom_bar() +
+  labs(y = "Count", title = paste("Bar Plot: ", var_label(d_data$phys_act)))
+
+ggplot(data = d_data, aes(x = fruits, fill = fruits)) +
+  geom_bar() +
+  labs(y = "Count", title = paste("Bar Plot: ", var_label(d_data$fruits)))
+
+ggplot(data = d_data, aes(x = veggies, fill = veggies)) +
+  geom_bar() +
+  labs(y = "Count", title = paste("Bar Plot: ", var_label(d_data$veggies)))
+
+ggplot(data = d_data, aes(x = alcohol, fill = alcohol)) +
+  geom_bar() +
+  labs(y = "Count", title = paste("Bar Plot: ", var_label(d_data$alcohol)))
+
+ggplot(data = d_data, aes(x = sex, fill = sex)) +
+  geom_bar() +
+  labs(y = "Count", title = paste("Bar Plot: ", var_label(d_data$sex)))
+
+ggplot(data = d_data, aes(x = age, fill = age)) +
+  geom_bar() +
+  labs(y = "Count", title = paste("Bar Plot: ", var_label(d_data$age))) +
+  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+```
+
+As was seen in the one-way contingency tables, most respondents did not have diabetes. A surprisingly high number had smoked over 100 cigarettes. Most ate veggies and fruit at least once a day, but more ate veggies than ate fruit. Very few were heavy drinkers. A bit over half were female (56%).
+
+Bar Plots of Numeric Variables Grouped by Diabetes Status:
+
+```{r}
+ggplot(data = d_data, aes(x = smoker, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$smoker), "Grouped by", var_label(d_data$dia_ind)))
+
+ggplot(data = d_data, aes(x = phys_act, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$phys_act), "Grouped by", var_label(d_data$dia_ind)))
+
+ggplot(data = d_data, aes(x = fruits, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$fruits), "Grouped by", var_label(d_data$dia_ind)))
+
+ggplot(data = d_data, aes(x = veggies, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$veggies), "Grouped by", var_label(d_data$dia_ind)))
+
+ggplot(data = d_data, aes(x = alcohol, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$alcohol), "Grouped by", var_label(d_data$dia_ind)))
+
+ggplot(data = d_data, aes(x = sex, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$sex), "Grouped by", var_label(d_data$dia_ind)))
+
+ggplot(data = d_data, aes(x = dia_ind, fill = age)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$dia_ind), "Grouped by", var_label(d_data$age))) 
+```
+
+The side-by-side bar plots show slightly higher proportions of diabetes for smokers compared to non-smokers, non-physically active compared to physically active, non-fruit eaters compared to fruit eaters, non-veggie eaters compared to veggie eaters, and male compared to female.
+
+Bar Plots of Lifestyle Factors Faceted by Sex:
+
+```{r}
+ggplot(data = d_data, aes(x = smoker, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$smoker), "Grouped by", var_label(d_data$dia_ind))) +
+  facet_wrap(~sex)
+
+ggplot(data = d_data, aes(x = phys_act, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$phys_act), "Grouped by", var_label(d_data$dia_ind))) +
+  facet_wrap(~sex)
+
+ggplot(data = d_data, aes(x = fruits, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$fruits), "Grouped by", var_label(d_data$dia_ind))) +
+  facet_wrap(~sex)
+
+ggplot(data = d_data, aes(x = veggies, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$veggies), "Grouped by", var_label(d_data$dia_ind))) +
+  facet_wrap(~sex)
+
+ggplot(data = d_data, aes(x = alcohol, fill = dia_ind)) +
+  geom_bar(position = "dodge") +
+  labs(y = "Count", title = "Bar Plot:", subtitle = paste(var_label(d_data$alcohol), "Grouped by", var_label(d_data$dia_ind))) +
+  facet_wrap(~sex)
+```
+
+A greater proportion of women seem to practice healthier lifestyle factors, perhaps contributing to slightly higher diabetes among men in the data set.
+
+Box Plot and Smoothed Density Curve of Numeric Variable BMI:
+
+```{r}
+ggplot(data = d_data, aes(x = bmi)) +
+  geom_density() +
+  labs(y = "Density", title = "Smoothed Density Curve: BMI")
+
+ggplot(data = d_data, aes(y = bmi)) +
+  geom_boxplot() +
+  labs(y = "BMI", title = "Box Plot: BMI") +
+  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+```
+
+There are a lot of high-BMI outliers visible in the box plot.
+
+Box Plots and Smoothed Density Curves of BMI Grouped by Diabetes Status
+
+```{r}
+ggplot(data = d_data, aes(x = bmi, fill = dia_ind)) +
+  geom_density(alpha = 0.5) +
+  labs(y = "Density", title = "Smoothed Density Curve: BMI")
+
+ggplot(data = d_data, aes(y = bmi, x = dia_ind, fill = dia_ind)) +
+  geom_boxplot() +
+  labs(y = "BMI", title = "Box Plot: BMI")
+```
+
+There are a lot of high_BMI outliers visible in both the diabetes and non-diabetes box plots. The box plots and smoothed density curves mostly overlap, but the diabetes group is slightly higher.
+
+## EDA Conclusion
+
+From the data summaries and visualizations of this data set, healthy lifestyle factors seem to correspond to slightly lower rates of diabetes and pre-diabetes, with the exception of heavy alcohol consumption. Men seemed to have slightly higher rates of diabetes and pre-diabetes than women, perhaps caused by their lower engagement in healthy lifestyle choices.
+
+## Link to Modeling Page
+
+[Click here for the Modeling Page](Modeling.html)
+
+
