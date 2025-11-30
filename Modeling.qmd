@@ -23,17 +23,114 @@ The ultimate goal of the entire project is to fit predictive models to the varia
 
 ## Preliminary Tasks
 
-*Load packages and create smaller data file for modeling.*
+*Load packages, read in and transform data, and create data set for modeling.*
 
 Load packages:
 
 ```{r}
 library(tidyverse)
-library(labelled)
+#library(labelled)
 library(tidymodels)
-library(rpart)
-library(baguette)
+#library(rpart)
+#library(baguette)
 ```
+
+Read in and transform data:
+*Applying same transformations as in EDA.qmd, except for adding labels*
+
+```{r}
+original_diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
+
+d_data <- original_diabetes_data |>
+  rename("dia_ind" = "Diabetes_binary",
+         "bp" = "HighBP",
+         "chol" = "HighChol",
+         "chol_ch5" = "CholCheck",
+         "bmi" = "BMI",
+         "smoker" = "Smoker",
+         "stroke" = "Stroke",
+         "hrt_dis_atk" = "HeartDiseaseorAttack",
+         "phys_act" = "PhysActivity",
+         "fruits" = "Fruits",
+         "veggies" = "Veggies",
+         "alcohol" = "HvyAlcoholConsump",
+         "h_care" = "AnyHealthcare",
+         "no_doc" = "NoDocbcCost",
+         "gen_health" = "GenHlth", 
+         "m_health" ="MentHlth", 
+         "ph_health" = "PhysHlth",
+         "walk_diff" = "DiffWalk", 
+         "sex" = "Sex", 
+         "age" ="Age", 
+         "edu"  ="Education", 
+         "income" = "Income")
+
+d_data <- d_data |> mutate(
+  dia_ind = factor(dia_ind, levels = c(0, 1), 
+                   labels = c("No Diabetes", "Diabetes")), 
+  bp = factor(bp, levels = c(0, 1), 
+              labels = c("No High BP", "High BP")), 
+  chol = factor(chol, levels = c(0, 1), 
+                labels = c("No High Cholesterol", "High Cholesterol")), 
+  chol_ch5 = factor(chol_ch5, levels = c(0, 1),
+                    labels = c("No 5yr Cholesterol Check", "5yr Cholesterol Check")),
+  smoker = factor(smoker, levels = c(0, 1),
+                  labels = c("Non-Smoker", "Smoker")),
+  stroke = factor(stroke, levels = c(0, 1),
+                  labels = c("No Stroke", "Stroke")),      
+  hrt_dis_atk = factor(hrt_dis_atk, levels = c(0, 1),
+                  labels = c("No Heart Disease/Attack", "Heart Disease/Attack")),
+  phys_act = factor(phys_act, levels = c(0, 1),
+                  labels = c("No Physical Activity", "Physical Activity")), 
+  fruits = factor(fruits, levels = c(0, 1),
+                  labels = c("No Fruit", "Fruit")), 
+  veggies = factor(veggies, levels = c(0, 1),
+                  labels = c("No Veggies", "Veggies")),     
+  alcohol = factor(alcohol, levels = c(0, 1),
+                  labels = c("Not Heavy Drinker", "Heavy Drinker")),    
+  h_care = factor(h_care, levels = c(0, 1),
+                  labels = c("No Healthcare Coverage", "Healthcare Coverage")),      
+  no_doc = factor(no_doc, levels = c(0, 1),
+                  labels = c("No Missed Visit Due to Money", "Missed Visit Due to Money")),      
+  gen_health = factor(gen_health, levels = c(1, 2, 3, 4, 5),
+                      labels = c("Excellent General", "Very Good General Health", 
+                                 "Good General Health", "Fair General Health", "Poor General Health")),
+  m_health = factor(m_health, levels = c(0:30),
+                      labels = c(0:30)),
+  ph_health = factor(ph_health, levels = c(0:30),
+                      labels = c(0:30)),
+  walk_diff = factor(walk_diff, levels = c(0, 1),
+                      labels = c("No Difficulty Walking", "Difficulty Walking")),
+  sex = factor(sex, levels = c(0, 1),
+                  labels = c("Female", "Male")),
+  age = factor(age, levels = c(1:13),
+               labels = c("Ages 18 to 24", 
+                          "Ages 25 to 29", 
+                          "Ages 30 to 34", 
+                          "Ages 35 to 39",
+                          "Ages 40 to 44", 
+                          "Ages 45 to 49", 
+                          "Ages 50 to 54", 
+                          "Ages 55 to 59",
+                          "Ages 60 to 64",
+                          "Ages 65 to 69",
+                          "Ages 70 to 74",
+                          "Ages 75 to 79",
+                          "Ages 80 or older")),         
+  edu = factor(edu, levels = c(1:6),
+               labels = c("Kindergarten or Less", "Grades 1 to 8", "Some High School", "High School Graduate", "Some College or Technical School", "College Graduate")),
+  income = factor(income, levels = c(1:8),
+                  labels = c("Less than $10,000",
+                             "$10,000 to less than $15,000",
+                             "$15,000 to less than $20,000",
+                             "$20,000 to less than $25,000",
+                             "$25,000 to less than $35,000", 
+                             "$35,000 to less than $50,000",
+                             "$50,000 to less than $75,000",
+                             "$75,000 or more")))
+
+```
+
 
 Create modeling data file:
 
@@ -164,16 +261,16 @@ Create recipe:
 
 ```{r}
 random_forest_recipe <- recipe(dia_ind ~ ., data = m_train) |>
-#  update_role(age, new_role = "ID") |>
+  update_role(age, new_role = "ID") |>
   step_normalize(bmi) |>
-  step_dummy(smoker, phys_act, fruits, veggies, alcohol, sex, age)
+  step_dummy(smoker, phys_act, fruits, veggies, alcohol, sex)
 ```
 
 Create model engine:
 *This is different than for the classification tree model.*
 
 ```{r}
-random_forest_model <- rand_forest(mtry = tune(), trees = 100) |>
+random_forest_model <- rand_forest(mtry = tune(), trees = 50) |>
   set_engine("ranger", importance = "impurity") |>
   set_mode("classification")
 ```
@@ -248,7 +345,7 @@ ggplot(rf_importance, aes(x = Importance, y = Variable)) +
        subtitle = "Variable Importance Plot")
 ```
 
-According to the plot, the most important variable considered is BMI, by far. This parallels the classification tree's first split on BMI. The next most important variable in the random forest according to the plot is physical activity.
+According to the plot, the most important variable considered is BMI, by far. This parallels the classification tree's first split on BMI. The next most important variable in the random forest according to the plot of the model is physical activity.
 
 ## Final Model Selection
 
@@ -267,7 +364,7 @@ random_forest_best_fit |>
 )
 ```
 
-The random forest model has mean log-loss of 0.353 while the classification tree has mean log-loss of 0.384. The best-fit random forest model is the final model selection.
+The random forest best model has lower mean log-loss than the classification tree best model. The best-fit random forest model is the final model selected.
 
 ## Final Model
 
@@ -291,9 +388,13 @@ ggplot(var_importance, aes(x = Importance, y = Variable)) +
        subtitle = "Best Random Forest Model Fit on Entire Data Set")
 ```
 
-Export data set for the diabetes model for use in associated API:
+Export modeling data set and final model for use in associated API:
 
 ```{r}
+#not yet sure best location for storing these
 write_csv(m_data, "modelAPI.R/diabetes_modeling_data.csv")
+write_csv(m_data, "diabetes_modeling_data.csv")
+saveRDS(final_model, file = "modelAPI.R/final_model.rds")
+saveRDS(final_model, file = "final_model.rds")
 ```
 

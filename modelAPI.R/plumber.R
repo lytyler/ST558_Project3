@@ -1,9 +1,13 @@
 
 library(plumber)
+library(tidyverse)
+library(tidymodels)
 
 #* @apiTitle diabetes_model_API
 #* @apiDescription NCSU ST558 Project 3: API for Diabetes Data Model
 
+#read in model and data
+diabetes_model <- readRDS("final_model.rds")
 diabetes_modeling_data <- read_csv("diabetes_modeling_data.csv")
 
 #* Echo back the input
@@ -36,3 +40,4 @@ function(pr) {
         # Overwrite the default serializer to return unboxed JSON
         pr_set_serializer(serializer_unboxed_json())
 }
+
