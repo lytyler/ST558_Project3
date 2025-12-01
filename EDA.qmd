@@ -272,7 +272,7 @@ The mean and median BMI were both about four points higher for those with diabet
 
 ### Graphical Data Summaries
 
-Bar Plots of Single Numeric Variables:
+Bar Plots of Single categorical Variables:
 
 ```{r}
 ggplot(data = d_data, aes(x = dia_ind, fill = dia_ind)) +
@@ -311,7 +311,7 @@ ggplot(data = d_data, aes(x = age, fill = age)) +
 
 As was seen in the one-way contingency tables, most respondents did not have diabetes. A surprisingly high number had smoked over 100 cigarettes. Most ate veggies and fruit at least once a day, but more ate veggies than ate fruit. Very few were heavy drinkers. A bit over half were female (56%).
 
-Bar Plots of Numeric Variables Grouped by Diabetes Status:
+Bar Plots of Categorical Variables Grouped by Diabetes Status:
 
 ```{r}
 ggplot(data = d_data, aes(x = smoker, fill = dia_ind)) +
