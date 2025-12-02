@@ -146,27 +146,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <section id="data-diabetes-binary-health-indicators" class="level3">
 <h3 class="anchored" data-anchor-id="data-diabetes-binary-health-indicators">Data: Diabetes Binary Health Indicators</h3>
-<p>The data used in this analysis is from the Diabetes Health Indicators Dataset available at kaggle. The specific data file used is diabetes_binary_health_indicators_BRFSS2015.csv. This file consists of a cleaned data set of 253,680 survey responses to the CDC’s Behavioral Risk Factor Surveillance System (RFSS) 2015. This analysis is focused on the lifestyle factors of smoking, drinking, physical activity, eating fruits and vegetables, as well as the basic body features of BMI, sex, and age, with the ultimate goal of building a model of these variables to predict diabetes status. These variables are described below:</p>
+<p>The data used in this analysis is from the Diabetes Health Indicators Data Set available at kaggle. The specific data file used is diabetes_binary_health_indicators_BRFSS2015.csv. This file consists of a cleaned data set of 253,680 survey responses to the CDC’s Behavioral Risk Factor Surveillance System (RFSS) 2015. This analysis is focused on the lifestyle factors of smoking, drinking, physical activity, eating fruits and vegetables, as well as the basic body features of BMI, sex, and age, with the ultimate goal of building a model of these variables to predict diabetes status. These variables are described below:</p>
 <p><strong>Target Variable</strong></p>
 <ul>
 <li>Diabetes_binary (renamed dia_ind; labelled Diabetes Status): two classes indicating no diabetes or pre-diabetes/diabetes</li>
 </ul>
 <p><strong>Predictor Variables Considered</strong></p>
 <ul>
-<li><p>BMI (renamed bmi; labelled BMI): Body Mass Index (continuous variable)</p></li>
-<li><p>Smoker (renamed smoker; labelled Smoker): two classes indicating whether the subject had smoked at least 100 cigarettes (5 packs) in their lifetime</p></li>
-<li><p>PhysActivity (renamed phys_act; labelled Physical Activity within Last Month): two classes indicating if subject had engaged in physical activity outside of work in the previous 30 days or not</p></li>
-<li><p>Fruits (renamed fruits; labelled Daily Fruit): two classes indicating if subject had consumed fruit one or more times per day or not</p></li>
-<li><p>Veggies (renamed fruits; labelled Daily Veggie): two classes indicating if subject had consumed veggies one or more times per day or not</p></li>
-<li><p>HvyAlcoholConsump (renamed alcohol; labelled Heavy Alcohol Consumption): two classes indicating if men had consumed more than 14 drinks per week and women more than 7 or not</p></li>
-<li><p>Sex (renamed sex; labelled Sex): two classes indicating male or female</p></li>
+<li><p>BMI (renamed bmi; labeled BMI): Body Mass Index (continuous variable)</p></li>
+<li><p>Smoker (renamed smoker; labeled Smoker): two classes indicating whether the subject had smoked at least 100 cigarettes (5 packs) in their lifetime</p></li>
+<li><p>PhysActivity (renamed phys_act; labeled Physical Activity within Last Month): two classes indicating if subject had engaged in physical activity outside of work in the previous 30 days or not</p></li>
+<li><p>Fruits (renamed fruits; labeled Daily Fruit): two classes indicating if subject had consumed fruit one or more times per day or not</p></li>
+<li><p>Veggies (renamed fruits; labeled Daily Veggie): two classes indicating if subject had consumed veggies one or more times per day or not</p></li>
+<li><p>HvyAlcoholConsump (renamed alcohol; labeled Heavy Alcohol Consumption): two classes indicating if men had consumed more than 14 drinks per week and women more than 7 or not</p></li>
+<li><p>Sex (renamed sex; labeled Sex): two classes indicating male or female</p></li>
 <li><p>Age (renamed age; labelled Age): thirteen classes indicating age range (Ages 18 to 24, Ages 25 to 29, Ages 30 to 34, Ages 35 to 39, Ages 40 to 44, Ages 45 to 49, Ages 50 to 54, Ages 55 to 59, Ages 60 to 64, Ages 65 to 69, Ages 70 to 74, Ages 75 to 79, Ages 80 or older)</p></li>
 </ul>
 <p><a href="https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset/data?select=diabetes_binary_health_indicators_BRFSS2015.csv">Learn more about the original data here.</a></p>
 </section>
 <section id="purpose" class="level3">
 <h3 class="anchored" data-anchor-id="purpose">Purpose</h3>
-<p>The purpose of this exploratory data analysis is to see data summaries and visualizations of the variables under consideration to begin to understand the relationship between these predictors and the target variable of diabetes status. The ultimate goal of the entire project is to fit predictive models to the variables, choose a best fit model, and then house that model in an API within a docker container.</p>
+<p>The purpose of this exploratory data analysis is to see data summaries and visualizations of the variables under consideration to begin to understand the relationship between these predictors and the target variable of diabetes status. The ultimate goal of the entire project is to fit two types of predictive models to the variables (classification tree and random forest), choose a best fit model of each type, choose the best of the two types, and then house that model in an API within a docker container to make model predictions accessible.</p>
 </section>
 </section>
 <section id="preliminary-tasks" class="level2">
@@ -547,7 +547,7 @@ $income
 </section>
 <section id="exploratory-data-analysis-eda" class="level2">
 <h2 class="anchored" data-anchor-id="exploratory-data-analysis-eda">Exploratory Data Analysis (EDA)</h2>
-<p><em>This exploratory data analysis focuses on variables related to lifestyle and health history.</em></p>
+<p><em>This exploratory data analysis focuses on variables related to lifestyle plus basic body characteristics.</em></p>
 <section id="numeric-summaries" class="level3">
 <h3 class="anchored" data-anchor-id="numeric-summaries">Numeric Summaries</h3>
 <p>One-Way Contingency Tables of Categorical Variables of Interest, as Proportions:</p>
@@ -672,7 +672,7 @@ Ages 80 or older
   Diabetes        0.0126497950</code></pre>
 </div>
 </div>
-<p>Slightly higher proportions of smokers compared to non-smokers, non-physically active compared to physically active, non-fruit eaters compared to fruit eaters, non-veggie eaters compared to veggie eaters, and males compared to females had diabetes. These were not big differences. Proportion of diabetes was higher at higher ages. Counterintuitively, the heavy drinkers had a slightly lower proportion of diabetes than non-heavy drinkers.</p>
+<p>Slightly higher proportions of smokers compared to non-smokers, non-physically active compared to physically active, non-fruit eaters compared to fruit eaters, non-veggie eaters compared to veggie eaters, and males compared to females had diabetes. These were not big differences. Proportion of diabetes was higher at higher ages. Counter-intuitively, the heavy drinkers had a slightly lower proportion of diabetes than non-heavy drinkers.</p>
 <p>Numeric Data Summary of Numeric Variable (BMI):</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>d_data <span class="sc">|&gt;</span> <span class="fu">summarize</span>(<span class="st">"mean_BMI"</span> <span class="ot">=</span> <span class="fu">mean</span>(bmi), </span>
@@ -704,7 +704,7 @@ Ages 80 or older
 </section>
 <section id="graphical-data-summaries" class="level3">
 <h3 class="anchored" data-anchor-id="graphical-data-summaries">Graphical Data Summaries</h3>
-<p>Bar Plots of Single Numeric Variables:</p>
+<p>Bar Plots of Single Categorical Variables:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> d_data, <span class="fu">aes</span>(<span class="at">x =</span> dia_ind, <span class="at">fill =</span> dia_ind)) <span class="sc">+</span></span>
 <span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
@@ -789,7 +789,7 @@ Ages 80 or older
 </div>
 </div>
 <p>As was seen in the one-way contingency tables, most respondents did not have diabetes. A surprisingly high number had smoked over 100 cigarettes. Most ate veggies and fruit at least once a day, but more ate veggies than ate fruit. Very few were heavy drinkers. A bit over half were female (56%).</p>
-<p>Bar Plots of Numeric Variables Grouped by Diabetes Status:</p>
+<p>Bar Plots of Categorical Variables Grouped by Diabetes Status:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> d_data, <span class="fu">aes</span>(<span class="at">x =</span> smoker, <span class="at">fill =</span> dia_ind)) <span class="sc">+</span></span>
 <span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">position =</span> <span class="st">"dodge"</span>) <span class="sc">+</span></span>
@@ -921,7 +921,7 @@ Ages 80 or older
 </div>
 </div>
 </div>
-<p>A greater proportion of women seem to practice healthier lifestyle factors, perhaps contributing to slightly higher diabetes among men in the data set.</p>
+<p>A greater proportion of women seem to practice healthier lifestyle factors, perhaps contributing to a slightly higher rate of diabetes among men in the data set.</p>
 <p>Box Plot and Smoothed Density Curve of Numeric Variable BMI:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> d_data, <span class="fu">aes</span>(<span class="at">x =</span> bmi)) <span class="sc">+</span></span>
@@ -946,7 +946,7 @@ Ages 80 or older
 </div>
 </div>
 </div>
-<p>There are a lot of high-BMI outliers visible in the box plot.</p>
+<p>There are a lot of high-BMI outliers visible in the box plot. Log transforming the BMI data may improve model fits.</p>
 <p>Box Plots and Smoothed Density Curves of BMI Grouped by Diabetes Status</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> d_data, <span class="fu">aes</span>(<span class="at">x =</span> bmi, <span class="at">fill =</span> dia_ind)) <span class="sc">+</span></span>

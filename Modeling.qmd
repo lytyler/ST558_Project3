@@ -11,15 +11,15 @@ editor_options:
 
 ### Data: Diabetes Binary Health Indicators
 
-The data used in this analysis is from the Diabetes Health Indicators Dataset available at kaggle. The specific data file used is diabetes_binary_health_indicators_BRFSS2015.csv. This file consists of a cleaned data set of 253,680 survey responses to the CDC's Behavioral Risk Factor Surveillance System (RFSS) 2015. This analysis is focused on the lifestyle factors of smoking, drinking, physical activity, eating fruits and vegetables, as well as the basic body features of BMI, sex, and age, with the goal of building a model of these variables to predict diabetes status. A more detailed description of the variables is given in the [EDA portion](EDA.html) of the project.
+The data used in this analysis is from the Diabetes Health Indicators Data Set available at kaggle. The specific data file used is diabetes_binary_health_indicators_BRFSS2015.csv. This file consists of a cleaned data set of 253,680 survey responses to the CDC's Behavioral Risk Factor Surveillance System (RFSS) 2015. This analysis is focused on the lifestyle factors of smoking, drinking, physical activity, eating fruits and vegetables, as well as the basic body features of BMI, sex, and age, with the goal of building a model of these variables to predict diabetes status. A more detailed description of the variables is given in the [EDA portion](EDA.html) of the project.
 
 [Learn more about the original data here.](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset/data?select=diabetes_binary_health_indicators_BRFSS2015.csv)
 
 ### Purpose
 
-The purpose of this modeling exercise is to fit both classification tree and random forest models to the variables under consideration in order to predict diabetes status. A best fit model of each type will be selected, and then an overall best fit. The modeling data is split into training and test sets, five-fold cross-validation is used to to fit each model type, and log-loss is used as the metric for selecting models.
+The purpose of this modeling exercise is to fit both classification tree and random forest models to the variables under consideration in order to predict diabetes status. A best fit model of each type will be selected, and then an overall best fit will be selected. The modeling data is split into training and test sets, five-fold cross-validation is used to to fit each model type, and log-loss is used as the metric for selecting models. The best fit for each model type will be fit on the entire training data set, and then an overall best model will be chosen. THe final model will be fit again on the entire data set.
 
-The ultimate goal of the entire project is to fit predictive models to the variables, choose a best fit model of each type and then an overall best fit, and then house that model in an API within a docker container.
+The ultimate goal of the entire project is to fit predictive models to the variables, choose a best fit model of each type and then an overall best fit, and then house that model in an API within a docker container tk make model predictions accessible to others.
 
 ## Preliminary Tasks
 
@@ -29,14 +29,11 @@ Load packages:
 
 ```{r}
 library(tidyverse)
-#library(labelled)
 library(tidymodels)
-#library(rpart)
-#library(baguette)
 ```
 
 Read in and transform data:
-*Applying same transformations as in EDA.qmd, except for adding labels*
+*Applying same transformations as in EDA.qmd, except not adding labels this time*
 
 ```{r}
 original_diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
@@ -161,7 +158,7 @@ m_CV_folds <- vfold_cv(m_train, 5)
 
 ## Classification Tree Model
 
-A **classification tree** is a type of **decision tree**. It is a flexible, nonlinear model in which the predictor space is divided into regions, and a prediction value is assigned to each region. The most common classification for a region is usually assigned to that region. The modeling algorithm determines the best variable to start with (the most influential) and where to split the variables. The values of the variables determine the value of the prediction, according to the fitted decision tree.
+A **classification tree** is a type of **decision tree**. It is a flexible, nonlinear model in which the predictor space is divided into regions, and a prediction value is assigned to each region. The most common classification for a region is usually assigned to that region, which is what is done here. The modeling algorithm determines the best variable to start with (the most influential) and where to split the variables. The values of the variables determine the value of the prediction, according to the fitted decision tree.
 
 Using the tidymodels framework, we will create a recipe, a model engine, and a workflow; fit the workflow to the CV folds; collect metrics and determine best classification tree model (best tuning parameter(s)), finalize the workflow and fit that best model to the entire training data set.
 
@@ -169,14 +166,15 @@ Create recipe:
 
 ```{r}
 cl_tree_recipe <- recipe(dia_ind ~ ., data = m_train) |>
-  step_normalize(bmi) |>
-  step_dummy(smoker, phys_act, fruits, veggies, alcohol, sex, age)
+  step_log(bmi) |>
+  step_dummy(smoker, phys_act, fruits, veggies, alcohol, sex, age) |>
+  step_normalize(all_numeric())
 ```
 
 Create model engine:
 
 ```{r}
-cl_tree_model <- decision_tree(tree_depth = 7,
+cl_tree_model <- decision_tree(tree_depth = 6,
                           min_n = 20,
                           cost_complexity = tune()) |>
   set_engine("rpart") |>
@@ -257,17 +255,16 @@ Non-parametric bootstrapping involves treating the original data sample as the p
 Similar to the classification tree model, a random forest model will be generated for the diabetes data set using the tidymodels framework by defining a recipe, a model specification, and a workflow; fitting the workflow to the CV folds, collecting metrics and determining the best random forest model (best tuning parameter(s)), and fitting that best model to the entire training data set.
 
 Create recipe:
-*This is the same recipe used for the classification tree model.*
 
 ```{r}
 random_forest_recipe <- recipe(dia_ind ~ ., data = m_train) |>
   update_role(age, new_role = "ID") |>
-  step_normalize(bmi) |>
-  step_dummy(smoker, phys_act, fruits, veggies, alcohol, sex)
+  step_log(bmi) |>
+  step_dummy(smoker, phys_act, fruits, veggies, alcohol, sex) |>
+  step_normalize(all_numeric())
 ```
 
 Create model engine:
-*This is different than for the classification tree model.*
 
 ```{r}
 random_forest_model <- rand_forest(mtry = tune(), trees = 50) |>
@@ -391,10 +388,7 @@ ggplot(var_importance, aes(x = Importance, y = Variable)) +
 Export modeling data set and final model for use in associated API:
 
 ```{r}
-#not yet sure best location for storing these
 write_csv(m_data, "modelAPI.R/diabetes_modeling_data.csv")
-write_csv(m_data, "diabetes_modeling_data.csv")
 saveRDS(final_model, file = "modelAPI.R/final_model.rds")
-saveRDS(final_model, file = "final_model.rds")
 ```
 

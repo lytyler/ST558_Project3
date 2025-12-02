@@ -11,7 +11,7 @@ editor_options:
 
 ### Data: Diabetes Binary Health Indicators
 
-The data used in this analysis is from the Diabetes Health Indicators Dataset available at kaggle. The specific data file used is diabetes_binary_health_indicators_BRFSS2015.csv. This file consists of a cleaned data set of 253,680 survey responses to the CDC's Behavioral Risk Factor Surveillance System (RFSS) 2015. This analysis is focused on the lifestyle factors of smoking, drinking, physical activity, eating fruits and vegetables, as well as the basic body features of BMI, sex, and age, with the ultimate goal of building a model of these variables to predict diabetes status. These variables are described below:
+The data used in this analysis is from the Diabetes Health Indicators Data Set available at kaggle. The specific data file used is diabetes_binary_health_indicators_BRFSS2015.csv. This file consists of a cleaned data set of 253,680 survey responses to the CDC's Behavioral Risk Factor Surveillance System (RFSS) 2015. This analysis is focused on the lifestyle factors of smoking, drinking, physical activity, eating fruits and vegetables, as well as the basic body features of BMI, sex, and age, with the ultimate goal of building a model of these variables to predict diabetes status. These variables are described below:
 
 **Target Variable**
 
@@ -19,19 +19,19 @@ The data used in this analysis is from the Diabetes Health Indicators Dataset av
 
 **Predictor Variables Considered**
 
--   BMI (renamed bmi; labelled BMI): Body Mass Index (continuous variable)
+-   BMI (renamed bmi; labeled BMI): Body Mass Index (continuous variable)
 
--   Smoker (renamed smoker; labelled Smoker): two classes indicating whether the subject had smoked at least 100 cigarettes (5 packs) in their lifetime
+-   Smoker (renamed smoker; labeled Smoker): two classes indicating whether the subject had smoked at least 100 cigarettes (5 packs) in their lifetime
 
--   PhysActivity (renamed phys_act; labelled Physical Activity within Last Month): two classes indicating if subject had engaged in physical activity outside of work in the previous 30 days or not
+-   PhysActivity (renamed phys_act; labeled Physical Activity within Last Month): two classes indicating if subject had engaged in physical activity outside of work in the previous 30 days or not
 
--   Fruits (renamed fruits; labelled Daily Fruit): two classes indicating if subject had consumed fruit one or more times per day or not
+-   Fruits (renamed fruits; labeled Daily Fruit): two classes indicating if subject had consumed fruit one or more times per day or not
 
--   Veggies (renamed fruits; labelled Daily Veggie): two classes indicating if subject had consumed veggies one or more times per day or not
+-   Veggies (renamed fruits; labeled Daily Veggie): two classes indicating if subject had consumed veggies one or more times per day or not
 
--   HvyAlcoholConsump (renamed alcohol; labelled Heavy Alcohol Consumption): two classes indicating if men had consumed more than 14 drinks per week and women more than 7 or not
+-   HvyAlcoholConsump (renamed alcohol; labeled Heavy Alcohol Consumption): two classes indicating if men had consumed more than 14 drinks per week and women more than 7 or not
 
--   Sex (renamed sex; labelled Sex): two classes indicating male or female
+-   Sex (renamed sex; labeled Sex): two classes indicating male or female
 
 -   Age (renamed age; labelled Age): thirteen classes indicating age range (Ages 18 to 24, Ages 25 to 29, Ages 30 to 34, Ages 35 to 39, Ages 40 to 44, Ages 45 to 49, Ages 50 to 54, Ages 55 to 59, Ages 60 to 64, Ages 65 to 69, Ages 70 to 74, Ages 75 to 79, Ages 80 or older)
 
@@ -39,7 +39,7 @@ The data used in this analysis is from the Diabetes Health Indicators Dataset av
 
 ### Purpose
 
-The purpose of this exploratory data analysis is to see data summaries and visualizations of the variables under consideration to begin to understand the relationship between these predictors and the target variable of diabetes status. The ultimate goal of the entire project is to fit predictive models to the variables, choose a best fit model, and then house that model in an API within a docker container.
+The purpose of this exploratory data analysis is to see data summaries and visualizations of the variables under consideration to begin to understand the relationship between these predictors and the target variable of diabetes status. The ultimate goal of the entire project is to fit two types of predictive models to the variables (classification tree and random forest), choose a best fit model of each type, choose the best of the two types, and then house that model in an API within a docker container to make model predictions accessible.
 
 ## Preliminary Tasks
 
@@ -217,7 +217,7 @@ var_label(d_data) #take a look at the labels
 
 ## Exploratory Data Analysis (EDA)
 
-*This exploratory data analysis focuses on variables related to lifestyle and health history.*
+*This exploratory data analysis focuses on variables related to lifestyle plus basic body characteristics.*
 
 ### Numeric Summaries
 
@@ -248,7 +248,7 @@ proportions(table(d_data$dia_ind, d_data$sex))
 proportions(table(d_data$dia_ind, d_data$age))
 ```
 
-Slightly higher proportions of smokers compared to non-smokers, non-physically active compared to physically active, non-fruit eaters compared to fruit eaters, non-veggie eaters compared to veggie eaters, and males compared to females had diabetes. These were not big differences. Proportion of diabetes was higher at higher ages. Counterintuitively, the heavy drinkers had a slightly lower proportion of diabetes than non-heavy drinkers.
+Slightly higher proportions of smokers compared to non-smokers, non-physically active compared to physically active, non-fruit eaters compared to fruit eaters, non-veggie eaters compared to veggie eaters, and males compared to females had diabetes. These were not big differences. Proportion of diabetes was higher at higher ages. Counter-intuitively, the heavy drinkers had a slightly lower proportion of diabetes than non-heavy drinkers.
 
 Numeric Data Summary of Numeric Variable (BMI):
 
@@ -272,7 +272,7 @@ The mean and median BMI were both about four points higher for those with diabet
 
 ### Graphical Data Summaries
 
-Bar Plots of Single categorical Variables:
+Bar Plots of Single Categorical Variables:
 
 ```{r}
 ggplot(data = d_data, aes(x = dia_ind, fill = dia_ind)) +
@@ -374,7 +374,7 @@ ggplot(data = d_data, aes(x = alcohol, fill = dia_ind)) +
   facet_wrap(~sex)
 ```
 
-A greater proportion of women seem to practice healthier lifestyle factors, perhaps contributing to slightly higher diabetes among men in the data set.
+A greater proportion of women seem to practice healthier lifestyle factors, perhaps contributing to a slightly higher rate of diabetes among men in the data set.
 
 Box Plot and Smoothed Density Curve of Numeric Variable BMI:
 
@@ -389,7 +389,7 @@ ggplot(data = d_data, aes(y = bmi)) +
   theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 ```
 
-There are a lot of high-BMI outliers visible in the box plot.
+There are a lot of high-BMI outliers visible in the box plot. Log transforming the BMI data may improve model fits.
 
 Box Plots and Smoothed Density Curves of BMI Grouped by Diabetes Status
 
