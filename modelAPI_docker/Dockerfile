@@ -2,11 +2,11 @@
 FROM rstudio/plumber
 
 # install the linux libraries needed for plumber
-RUN apt-get update -qq && apt-get install -y  libssl-dev  libcurl4-gnutls-dev  libpng-dev pandoc 
+RUN apt-get update -qq && apt-get install -y  libssl-dev  libcurl4-gnutls-dev libpng-dev pandoc
     
     
 # install packages
-RUN R -e "install.packages(c('plumber', 'tidyverse', 'tidymodels', 'ranger'))"
+RUN R -e "install.packages(c('tidyverse', 'tidymodels','ranger'))"
 
 # copy modelAPI.R, modeling data, and diabetes model from the current directory into the container
 COPY modelAPI.R modelAPI.R

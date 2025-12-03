@@ -75,7 +75,7 @@ function(bmi = 28.38236, smoker = "Non-Smoker",
                         "phys_act" = phys_act, "fruits" = fruits, 
                         "veggies" = veggies, "alcohol" = alcohol, 
                         "sex" = sex, "age" = age)
-  predict.model_fit(diabetes_model, observation)
+  predict(diabetes_model, observation, type = "class")
   
 }
 
@@ -104,7 +104,7 @@ function(){
 #* @get /confusion
 function() {
   #add model predictions to data
-  new_column = predict.model_fit(diabetes_model, diabetes_modeling_data)
+  new_column <- predict(diabetes_model, diabetes_modeling_data, type = "class")
   diabetes_modeling_data2 <- mutate(diabetes_modeling_data, 
                                    estimate = new_column$.pred_class)
   
