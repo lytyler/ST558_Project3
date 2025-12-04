@@ -83,9 +83,9 @@ function(bmi = 28.38236, smoker = "Non-Smoker",
 
 # sample query 1: http://localhost:PORT/pred?bmi=63&smoker=Smoker&phys_act=No%20Physical%20Activity&fruits=No%20Fruit&veggies=No%20Veggies&alcohol=Not%20Heavy%20Drinker&sex=Male
 
-# sample query 2: http://localhost:PORT/pred?bmi=28&smoker=Non-Smoker&phys_act=Physical Activity&fruits=Fruit&veggies=Veggies&alcohol=Not Heavy Drinker&sex=Female
+# sample query 2: http://localhost:PORT/pred?bmi=28&smoker=Non-Smoker&phys_act=Physical%20Activity&fruits=Fruit&veggies=Veggies&alcohol=Not%20Heavy%20Drinker&sex=Female
 
-# sample query 3: http://localhost:PORT/pred?bmi=80&smoker=Smoker&phys_act=No Physical Activity&fruits=No Fruit&veggies=No Veggies&alcohol=Not Heavy Drinker&sex=Male
+# sample query 3: http://localhost:PORT/pred?bmi=80&smoker=Smoker&phys_act=No%20Physical%20Activity&fruits=No%20Fruit&veggies=No%20Veggies&alcohol=Not%20Heavy%20Drinker&sex=Male
 
 
 #--------------------------------------------------------------------------------

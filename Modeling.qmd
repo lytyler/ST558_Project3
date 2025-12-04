@@ -388,7 +388,7 @@ ggplot(var_importance, aes(x = Importance, y = Variable)) +
 Export modeling data set and final model for use in associated API:
 
 ```{r}
-write_csv(m_data, "modelAPI.R/diabetes_modeling_data.csv")
-saveRDS(final_model, file = "modelAPI.R/final_model.rds")
+write_csv(m_data, "modelAPI_docker/diabetes_modeling_data.csv")
+saveRDS(final_model, file = "modelAPI_docker/final_model.rds")
 ```
 

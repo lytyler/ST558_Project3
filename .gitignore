@@ -4,3 +4,5 @@
 .Ruserdata
 
 /.quarto/
+
+/modelAPI_docker/model_api.tar
